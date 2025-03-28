@@ -1,0 +1,45 @@
+name: Build ESP8266 Deauther
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual runs
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install ESP8266 SDK
+        run: |
+          mkdir -p ~/arduino-esp8266
+          cd ~/arduino-esp8266
+          wget https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_64bit.tar.gz
+          tar -xvf arduino-cli_latest_Linux_64bit.tar.gz
+          sudo mv arduino-cli /usr/local/bin/
+          arduino-cli config init
+          arduino-cli core update-index
+          arduino-cli core install esp8266:esp8266
+
+      - name: Install Dependencies
+        run: |
+          arduino-cli lib install "ESP8266WiFi"
+          arduino-cli lib install "ArduinoJson"
+          arduino-cli lib install "ESPAsyncWebServer"
+
+      - name: Compile Firmware
+        run: |
+          arduino-cli compile --fqbn esp8266:esp8266:d1_mini ./DeautherX
+
+      - name: Upload Compiled Binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: DeautherX-firmware
+          path: ./DeautherX/build/*.bin
